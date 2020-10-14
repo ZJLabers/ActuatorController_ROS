@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+
+import math
+import rospy
+from actuatorcontroller_ros.msg import ActuatorCommand
+
+def mover():
+    count=0
+    action=[]
+    num_act=6
+
+    for line in open('data.txt'):
+        count+=1
+        if count % 11 == 8:
+            action.append(line[line.rfind("[")+1:line.rfind("]")].split(', '))
+
+    for i in range(len(action)):
+        for j in range(num_act):
+            action[i][j]=float(action[i][j])
+    
+    pub_shoulder_pan_joint = rospy.Publisher('/INNFOS/setTargetPosition', ActuatorCommand, queue_size=10)
+
+    rospy.init_node('arm_mover')
+    rate = rospy.Rate(100)
+    start_time = 0
+
+    while not start_time:
+        start_time = rospy.Time.now().to_sec()
+
+    count = 0
+    flag = True
+    while not rospy.is_shutdown():
+        elapsed = rospy.Time.now().to_sec() - start_time
+        
+        if flag:
+            for i in range(len(action)):
+                pub_shoulder_pan_joint.publish( 1, action[i][0])
+                pub_shoulder_pan_joint.publish( 2, action[i][1])
+                pub_shoulder_pan_joint.publish( 9, action[i][2])
+                pub_shoulder_pan_joint.publish(10, action[i][3])
+                pub_shoulder_pan_joint.publish(29, action[i][4])
+                pub_shoulder_pan_joint.publish(65, action[i][5])
+                
+                rate.sleep()
+            flag = False
+        
+        # i = count % len(action)
+        # pub_shoulder_pan_joint.publish( 1, action[i][0])
+        # count += 1
+        
+
+if __name__ == '__main__':
+    try:
+        mover()
+    except rospy.ROSInitException:
+        pass
